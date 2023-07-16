@@ -28,31 +28,16 @@ exercise="${slug//-/_}"
 results_file="${output_dir}/results.json"
 build_log_file="${output_dir}/build.log"
 
-# Create the output directory if it doesn't exist
 mkdir -p "${output_dir}"
 
 echo "${slug}: testing..."
 
-pushd "${input_dir}" > /dev/null || exit
+output_json="${output_dir}/output.json"
 
-dart pub upgrade --offline > "${build_log_file}"
-
-# Run the tests for the provided implementation file and redirect stdout and
-# stderr to capture it
-test_output=$(dart test --run-skipped 2>&1)
+#dart test --run-skipped --concurrency=4 --file-reporter "json:${output_json}"
+ ./bin/testrun "${output_json}"
 exit_code=$?
 
-popd > /dev/null || exit
-
-# Write the results.json file based on the exit code of the command that was 
-# just executed that tested the implementation file
-if [ $exit_code -eq 0 ]; then
-    jq -n '{version: 1, status: "pass"}' > "${results_file}"
-else
-    # Sanitize the output
-    sanitized_test_output=$(printf "${test_output}" | sed -E -e 's/[0-9]+:[0-9]+.*: //g')
-
-    jq -n --arg output "${sanitized_test_output}" '{version: 1, status: "fail", message: $output}' > "${results_file}"
-fi
-
 echo "${slug}: done"
+
+pushd "${input_dir}" > /dev/null || exit
